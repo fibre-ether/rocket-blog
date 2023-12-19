@@ -3,9 +3,8 @@ extern crate rocket;
 
 mod helpers;
 
-use chrono::Utc;
 use dotenv::dotenv;
-use helpers::{create_blog_sql, retrieve_blogs_sql, BlogIn, BlogOut};
+use helpers::{create_blog_sql, retrieve_blogs_sql, vote_on_blog_sql, BlogIn, UserVoteAction};
 use rocket::{
     http::Method,
     serde::json::{json, Json, Value},
@@ -20,16 +19,24 @@ fn index() -> String {
     String::from("Hello world")
 }
 
+#[get("/retrieve")]
+async fn retrieve_blogs(pool: &State<Pool<Postgres>>) -> Value {
+    let blogs = retrieve_blogs_sql(pool).await;
+    json!(blogs)
+}
+
 #[post("/submit", data = "<blog>")]
 async fn submit_blog(blog: Json<BlogIn>, pool: &State<Pool<Postgres>>) -> String {
-    create_blog_sql(&blog, pool).await;
+    create_blog_sql(blog, pool).await;
     "post added".to_string()
 }
 
-#[get("/retrieve")]
-async fn retrieve_blog(pool: &State<Pool<Postgres>>) -> Value {
-    let blogs = retrieve_blogs_sql(pool).await;
-    json!(blogs)
+#[post("/vote", data = "<user_post_action>")]
+async fn vote_on_blog(
+    user_post_action: Json<UserVoteAction>,
+    pool: &State<Pool<Postgres>>,
+) -> &str {
+    vote_on_blog_sql(user_post_action, pool).await
 }
 
 #[launch]
@@ -52,12 +59,13 @@ async fn rocket() -> _ {
     .to_cors()
     .expect("Error while setting cors");
 
-    let default_post = BlogOut {
-        added_at: Utc::now(),
-        author: String::from("new author"),
-        title: String::from("new title"),
-        description: String::from("new description"),
-    };
+    // let default_post = BlogOut {
+    //     added_at: Utc::now(),
+    //     author: String::from("new author"),
+    //     title: String::from("new title"),
+    //     description: String::from("new description"),
+    //     votes: 0,
+    // };
 
     let db_url = env::var("POSTGRES_CONNECTION_STRING").expect("cannot find connection string");
 
@@ -69,8 +77,8 @@ async fn rocket() -> _ {
 
     rocket::build()
         .mount("/", routes![index])
-        .mount("/blog", routes![submit_blog, retrieve_blog])
-        .manage::<BlogOut>(default_post)
+        .mount("/blog", routes![submit_blog, retrieve_blogs, vote_on_blog])
+        // .manage::<BlogOut>(default_post)
         .manage::<Pool<Postgres>>(pool)
         .attach(cors)
 }

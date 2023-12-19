@@ -1,0 +1,2 @@
+ALTER TABLE posts
+ADD blog_key BIGSERIAL PRIMARY KEY;

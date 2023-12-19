@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import SubmitBlogCard from "./app_components/SubmitBlogCard";
 import UseUsername from "./helpers/use-username";
 import { useState } from "react";
+import { ScrollArea } from "./components/ui/scroll-area";
 
 function App() {
   const { data, error, status } = useQuery({
@@ -31,16 +32,16 @@ function App() {
             Create Blogs
           </TabsTrigger>
         </TabsList>
-        <TabsContent
-          value="view"
-          className="space-y-4 w-full h-full overflow-auto px-4">
-          {status == "pending"
-            ? "Loading..."
-            : status == "error"
-            ? `Error: ${error}`
-            : data.map((item, index) => {
-                return <BlogCard {...item} key={index} />;
-              })}
+        <TabsContent value="view" className="max-h-[95%] w-full">
+          <ScrollArea className="w-full h-full px-4">
+            {status == "pending"
+              ? "Loading..."
+              : status == "error"
+              ? `Error: ${error}`
+              : data.map((item, index) => {
+                  return <BlogCard {...item} key={index} />;
+                })}
+          </ScrollArea>
         </TabsContent>
         <TabsContent value="create" className="w-full px-4">
           <SubmitBlogCard userName={userName} setTabValue={setTabValue} />
