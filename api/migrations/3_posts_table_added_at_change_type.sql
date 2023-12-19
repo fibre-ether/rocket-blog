@@ -1,0 +1,2 @@
+ALTER TABLE posts
+ALTER added_at TYPE TIMESTAMPTZ;
