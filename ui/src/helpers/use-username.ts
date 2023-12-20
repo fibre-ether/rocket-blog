@@ -1,18 +1,20 @@
 import { useEffect, useState } from "react";
 
 function UseUsername() {
-  const [userName, setUserName ] = useState<string>("anon")
-  useEffect(() => {
-    let localStorageUserName = localStorage.getItem("username")
+  let userName = "anon";
+  // const [userName, setUserName] = useState<string>("anon");
+  // useEffect(() => {
+  let localStorageUserName = "anon-12345"; //localStorage.getItem("username")
 
-    if (!localStorageUserName) {
-      localStorageUserName = "anon-"+ Math.floor(Math.random()*100000+9999)
-    }
+  if (!localStorageUserName) {
+    localStorageUserName = "anon-" + Math.floor(Math.random() * 100000 + 9999);
+  }
 
-    setUserName(localStorageUserName)
-  }, []);
+  // setUserName(localStorageUserName);
+  userName = localStorageUserName;
+  // }, []);
 
-  return {userName}
+  return { userName };
 }
 
 export default UseUsername;

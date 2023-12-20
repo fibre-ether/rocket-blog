@@ -19,9 +19,9 @@ fn index() -> String {
     String::from("Hello world")
 }
 
-#[get("/retrieve")]
-async fn retrieve_blogs(pool: &State<Pool<Postgres>>) -> Value {
-    let blogs = retrieve_blogs_sql(pool).await;
+#[get("/retrieve?<username>")]
+async fn retrieve_blogs(username: &str, pool: &State<Pool<Postgres>>) -> Value {
+    let blogs = retrieve_blogs_sql(username, pool).await;
     json!(blogs)
 }
 

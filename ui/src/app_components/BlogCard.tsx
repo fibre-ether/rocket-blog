@@ -8,20 +8,52 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import cx from "classnames";
 
 type Props = {
+  userName: string;
   title: string;
   author: string;
   description: string;
   added_at: string;
+  votes: number;
+  action_payload: string;
+  blog_key: number;
+  handleVote: (
+    username: string,
+    blog_key: number,
+    action_payload: string
+  ) => void;
 };
 
-function BlogCard({ title, author, description, added_at }: Props) {
+function BlogCard({
+  userName,
+  title,
+  author,
+  description,
+  added_at,
+  votes,
+  action_payload,
+  blog_key,
+  handleVote,
+}: Props) {
   const date = new Date(Date.parse(added_at))
     .toLocaleDateString("en", {
       dateStyle: "long",
     })
     .toString();
+
+  const onVote = (type: string) => {
+    handleVote(userName, blog_key, type);
+  };
+
+  const upVoteClassName = cx({
+    "bg-slate-600 border-[3px] border-white/25": action_payload === "increment",
+  });
+  const downVoteClassName = cx({
+    "bg-slate-600 border-[3px] border-white/25": action_payload === "decrement",
+  });
+
   return (
     <Card className="shadow-md mb-4">
       <CardHeader className="flex-row relative">
@@ -30,11 +62,21 @@ function BlogCard({ title, author, description, added_at }: Props) {
           <CardDescription>by {author}</CardDescription>
         </div>
         <div className="absolute top-2 right-6 w-1/6 h-28 flex flex-col justify-between items-center">
-          <Button variant={"secondary"}>
+          <Button
+            variant={"secondary"}
+            className={upVoteClassName}
+            onClick={() =>
+              onVote(action_payload == "increment" ? "reset" : "increment")
+            }>
             <ArrowUp />
           </Button>
-          <p>1</p>
-          <Button variant={"secondary"}>
+          <p>{votes}</p>
+          <Button
+            variant={"secondary"}
+            className={downVoteClassName}
+            onClick={() =>
+              onVote(action_payload == "decrement" ? "reset" : "decrement")
+            }>
             <ArrowDown />
           </Button>
         </div>
@@ -43,7 +85,7 @@ function BlogCard({ title, author, description, added_at }: Props) {
         <p>{description}</p>
       </CardContent>
       <CardFooter className="text-xs flex justify-end w-full">
-        {date}
+        {date} {action_payload}
       </CardFooter>
     </Card>
   );

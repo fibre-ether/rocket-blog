@@ -1,18 +1,19 @@
 import { fetchedBlog } from "@/types/Blog";
 import axios from "axios";
 
-export const fetchBlogs = async (): Promise<fetchedBlog[]> => {
-  const data = await axios.get(import.meta.env.VITE_API_URL + "blog/retrieve");
-  const sortedData = data.data;
-//   sortedData.forEach((element: fetchedBlog) => {
-//     console.log(
-//       element.title,
-//       element.added_at,
-//       Date.parse(element.added_at.toString())
-//     );
-//     element.added_at = Date.parse(element.added_at.toString());
-//   });
-  sortedData.sort((a: fetchedBlog, b: fetchedBlog):boolean => a.added_at < b.added_at);
-  console.log(sortedData);
-  return sortedData;
+export const fetchBlogs = (
+  userName: string
+): (() => Promise<fetchedBlog[]>) => {
+  return async function (): Promise<fetchedBlog[]> {
+    console.log("username in fetch blogs:", userName)
+    const data = await axios.get(
+      import.meta.env.VITE_API_URL + `blog/retrieve?username=${userName}`
+    );
+    const sortedData = data.data;
+    sortedData.sort(
+      (a: fetchedBlog, b: fetchedBlog): boolean => a.added_at < b.added_at
+    );
+    console.log(sortedData);
+    return sortedData;
+  };
 };

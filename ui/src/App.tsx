@@ -6,17 +6,35 @@ import SubmitBlogCard from "./app_components/SubmitBlogCard";
 import UseUsername from "./helpers/use-username";
 import { useState } from "react";
 import { ScrollArea } from "./components/ui/scroll-area";
+import axios from "axios";
 
 function App() {
-  const { data, error, status } = useQuery({
+  const { userName } = UseUsername();
+  console.log("username is app:", userName);
+
+  const { data, error, status, refetch } = useQuery({
     queryKey: ["blogs"],
-    queryFn: fetchBlogs,
+    queryFn: fetchBlogs(userName),
   });
+  console.log(data);
 
   const defaultTabValue = "view";
 
-  const { userName } = UseUsername();
   const [tabValue, setTabValue] = useState(defaultTabValue);
+
+  const handleVote = (
+    username: string,
+    blog_key: number,
+    action_payload: string
+  ) => {
+    axios
+      .post(import.meta.env.VITE_API_URL + "blog/vote", {
+        username,
+        blog_key,
+        action_payload,
+      })
+      .then(() => refetch());
+  };
 
   return (
     <div className="w-screen h-screen flex justify-center items-start py-5 bg-slate-600">
@@ -38,8 +56,17 @@ function App() {
               ? "Loading..."
               : status == "error"
               ? `Error: ${error}`
-              : data.map((item, index) => {
-                  return <BlogCard {...item} key={index} />;
+              : data &&
+                data.map((item, index) => {
+                  console.log(item);
+                  return (
+                    <BlogCard
+                      userName={userName}
+                      handleVote={handleVote}
+                      {...item}
+                      key={index}
+                    />
+                  );
                 })}
           </ScrollArea>
         </TabsContent>

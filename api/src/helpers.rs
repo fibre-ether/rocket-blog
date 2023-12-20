@@ -20,6 +20,7 @@ pub struct BlogOut {
     pub title: String,
     pub description: String,
     pub votes: i32,
+    pub action_payload: String,
 }
 
 #[derive(Deserialize)]
@@ -47,9 +48,25 @@ pub async fn create_blog_sql(blog: Json<BlogIn>, pool: &PgPool) {
         .expect("Error creating blog");
 }
 
-pub async fn retrieve_blogs_sql(pool: &PgPool) -> Vec<BlogOut> {
-    let query = "SELECT * FROM posts";
+pub async fn retrieve_blogs_sql(username: &str, pool: &PgPool) -> Vec<BlogOut> {
+    let query = "
+        SELECT p.author, p.title, p.description, p.votes, p.blog_key, p.added_at,
+            COALESCE(up.action_payload, 'reset') as action_payload
+        FROM posts p
+        LEFT JOIN (
+            SELECT username, blog_key, action_payload, added_time
+            FROM (
+                SELECT username, blog_key, action_payload, added_time,
+                    ROW_NUMBER() OVER (PARTITION BY blog_key ORDER BY added_time DESC) AS rn
+                FROM user_posts
+                WHERE action_type = 'vote'
+                AND username = $1
+            ) latest_user_posts
+            WHERE latest_user_posts.rn = 1
+        ) up ON p.blog_key = up.blog_key
+    ";
     sqlx::query(query)
+        .bind(username)
         .map(|row: PgRow| BlogOut {
             blog_key: row.get("blog_key"),
             added_at: row.get("added_at"),
@@ -57,6 +74,7 @@ pub async fn retrieve_blogs_sql(pool: &PgPool) -> Vec<BlogOut> {
             title: row.get("title"),
             description: row.get("description"),
             votes: row.get("votes"),
+            action_payload: row.get("action_payload"),
         })
         .fetch_all(pool)
         .await

@@ -36,7 +36,7 @@ function SubmitBlogCard({ userName, setTabValue }: Props) {
   const { toast } = useToast();
   const { refetch } = useQuery({
     queryKey: ["blogs"],
-    queryFn: fetchBlogs,
+    queryFn: fetchBlogs(userName),
   });
 
   return (
