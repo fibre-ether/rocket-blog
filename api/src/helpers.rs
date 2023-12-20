@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use chrono::{DateTime, Utc};
 use rocket::serde::{json::Json, Deserialize, Serialize};
 use sqlx::{postgres::PgRow, PgPool, Row};
@@ -68,17 +70,11 @@ pub async fn vote_on_blog_sql(user_post_action: Json<UserVoteAction>, pool: &PgP
         .await
         .expect("Error during starting transaction");
 
-    let query_select = "SELECT action_payload FROM user_posts WHERE username = $1 AND action_type = 'vote' AND blog_key = $2 ORDER BY added_time DESC";
-
-    let query_vote = match user_post_action.action_payload.as_str() {
-        "increment" => "UPDATE posts SET votes = votes + $1 WHERE blog_key=$2",
-        "decrement" => "UPDATE posts SET votes = votes - $1 WHERE blog_key=$2",
-        _ => "",
-    };
+    let query_select_user_action = "SELECT action_payload FROM user_posts WHERE username = $1 AND action_type = 'vote' AND blog_key = $2 ORDER BY added_time DESC";
 
     let query_user_action = "INSERT INTO user_posts (username, blog_key, action_type, action_payload, added_time) VALUES ($1, $2, $3, $4, $5)";
 
-    let previous_user_action_row = sqlx::query(query_select)
+    let previous_user_action_row = sqlx::query(query_select_user_action)
         .bind(&user_post_action.username)
         .bind(user_post_action.blog_key)
         .fetch_one(&mut *tx)
@@ -86,20 +82,48 @@ pub async fn vote_on_blog_sql(user_post_action: Json<UserVoteAction>, pool: &PgP
 
     let previous_user_action = match previous_user_action_row {
         Ok(row) => match row.try_get::<String, &str>("action_payload") {
-            Ok(value) => value,
-            Err(_) => "empty".to_string(),
+            Ok(value) => match value.as_str() {
+                "increment" => 1,
+                "decrement" => -1,
+                _ => 0,
+            },
+            Err(e) => {
+                println!("Error {e} during getting action payload from row");
+                0
+            }
         },
-        Err(_) => "empty".to_string(),
+        Err(e) => {
+            println!("Error {e} during fetching previous user action");
+            0
+        }
     };
-    println!("prev user action: {previous_user_action}");
-    if previous_user_action != user_post_action.action_payload {
+
+    let current_user_action = match user_post_action.action_payload.as_str() {
+        "increment" => 1,
+        "decrement" => -1,
+        _ => 0,
+    };
+
+    let final_action: i32 = current_user_action - previous_user_action;
+
+    let query_sign = match final_action.cmp(&0) {
+        Ordering::Less => "-",
+        Ordering::Greater => "+",
+        Ordering::Equal => "+",
+    };
+
+    let query_vote = format!(
+        "UPDATE posts SET votes = votes {} {} WHERE blog_key=$1",
+        query_sign,
+        final_action.abs()
+    );
+
+    println!("user action: {previous_user_action} -> {current_user_action} = {final_action}");
+
+    if final_action != 0 {
+        println!("doing db stuff");
         status = "vote added";
-        sqlx::query(query_vote)
-            .bind(if previous_user_action == *"empty".to_string() {
-                1
-            } else {
-                2
-            })
+        sqlx::query(&query_vote)
             .bind(user_post_action.blog_key)
             .execute(&mut *tx)
             .await
