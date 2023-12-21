@@ -1,8 +1,15 @@
 use std::cmp::Ordering;
 
 use chrono::{DateTime, Utc};
-use rocket::serde::{json::Json, Deserialize, Serialize};
+use rocket::{
+    serde::{json::Json, Deserialize, Serialize},
+    State,
+};
 use sqlx::{postgres::PgRow, PgPool, Row};
+
+pub struct MyState {
+    pub pool: PgPool,
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(crate = "rocket::serde")]
@@ -36,19 +43,19 @@ pub struct UserVoteAction {
 //     action_payload: String,
 // }
 
-pub async fn create_blog_sql(blog: Json<BlogIn>, pool: &PgPool) {
+pub async fn create_blog_sql(blog: Json<BlogIn>, state: &State<MyState>) {
     let query = "INSERT INTO posts (author, title, description, added_at) VALUES ($1, $2, $3, $4)";
     sqlx::query(query)
         .bind(&blog.author)
         .bind(&blog.title)
         .bind(&blog.description)
         .bind(Utc::now())
-        .execute(pool)
+        .execute(&state.pool)
         .await
         .expect("Error creating blog");
 }
 
-pub async fn retrieve_blogs_sql(username: &str, pool: &PgPool) -> Vec<BlogOut> {
+pub async fn retrieve_blogs_sql(username: &str, state: &State<MyState>) -> Vec<BlogOut> {
     let query = "
         SELECT p.author, p.title, p.description, p.votes, p.blog_key, p.added_at,
             COALESCE(up.action_payload, 'reset') as action_payload
@@ -76,14 +83,18 @@ pub async fn retrieve_blogs_sql(username: &str, pool: &PgPool) -> Vec<BlogOut> {
             votes: row.get("votes"),
             action_payload: row.get("action_payload"),
         })
-        .fetch_all(pool)
+        .fetch_all(&state.pool)
         .await
         .expect("Error retrieving blog")
 }
 
-pub async fn vote_on_blog_sql(user_post_action: Json<UserVoteAction>, pool: &PgPool) -> &str {
+pub async fn vote_on_blog_sql(
+    user_post_action: Json<UserVoteAction>,
+    state: &State<MyState>,
+) -> &str {
     let mut status = "duplicate vote";
-    let mut tx = pool
+    let mut tx = state
+        .pool
         .begin()
         .await
         .expect("Error during starting transaction");

@@ -1,14 +1,15 @@
 [package]
-name = "learning"
+name = "rocket-forum-app"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 rocket = { version = "0.5.0", features = ["json"] }
-rand = "0.8.5"
-sqlx = { version = "0.7.3", features = ["postgres", "runtime-tokio", "chrono", "tls-rustls"] }
-dotenv = "0.15.0"
+serde = "1.0.148"
+shuttle-shared-db = { version = "0.35.0", features = ["postgres"] }
+shuttle-rocket = "0.35.0"
+shuttle-runtime = "0.35.0"
+sqlx = { version = "0.7.1", features = ["runtime-tokio-native-tls", "postgres", "chrono"] }
 chrono = {version = "0.4.31", features = ["serde"]}
+tokio = "1.26.0"
 rocket_cors = "0.6.0"
