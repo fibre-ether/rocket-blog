@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 function UseUsername() {
   let userName = "anon";
   // const [userName, setUserName] = useState<string>("anon");
