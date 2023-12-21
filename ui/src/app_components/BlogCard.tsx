@@ -85,7 +85,7 @@ function BlogCard({
         <p>{description}</p>
       </CardContent>
       <CardFooter className="text-xs flex justify-end w-full">
-        {date} {action_payload}
+        {date}
       </CardFooter>
     </Card>
   );
