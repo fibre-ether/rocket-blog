@@ -37,6 +37,7 @@ function SubmitBlogCard({ userName, setTabValue }: Props) {
   const { refetch } = useQuery({
     queryKey: ["blogs"],
     queryFn: fetchBlogs(userName),
+    staleTime: Infinity,
   });
 
   return (

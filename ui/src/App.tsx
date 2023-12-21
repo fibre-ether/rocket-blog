@@ -15,6 +15,7 @@ function App() {
   const { data, error, status, refetch } = useQuery({
     queryKey: ["blogs"],
     queryFn: fetchBlogs(userName),
+    staleTime: Infinity,
   });
   console.log(data);
 
